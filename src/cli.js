@@ -8,6 +8,7 @@
  */
 
 import { generateRecap } from './index.js';
+import { generateMdx } from './mdx.js';
 import { collectDiff } from './collect.js';
 import { resolve } from 'path';
 import { writeFileSync, mkdirSync } from 'fs';
@@ -28,27 +29,27 @@ Options:
   --repo <path>      Path to git repo (default: current directory)
   --base <ref>       Base git ref (default: origin/main)
   --head <ref>       Head git ref (default: HEAD)
-  --out <path>       Output HTML file (default: ./recap-output/recap.html)
-  --open             Open the report in the default browser after generating
+  --out <path>       Output base file path (default: ./recap-output/recap)
+                     Note: file extensions (.html/.mdx) will be appended automatically
+                     if not specified.
+  --format <type>    Output format: html, mdx, or both (default: both)
+  --open             Open the HTML report in the default browser after generating
   --title <text>     Custom title for the recap
   --help             Show this help message
   --self-test        Run a self-test on this repo
 
 Examples:
-  # Recap all changes vs origin/main
+  # Recap all changes vs origin/main in both formats
   node src/cli.js
+
+  # Output MDX format only
+  node src/cli.js --format mdx
 
   # Recap a specific branch
   node src/cli.js --base main --head vue-migration
 
-  # Recap a specific commit
-  node src/cli.js --base HEAD~1 --head HEAD
-
   # Recap and open in browser
   node src/cli.js --open
-
-  # Recap a different repo
-  node src/cli.js --repo /path/to/other-repo --base main --head feature/my-branch
 `);
 }
 
@@ -66,7 +67,9 @@ async function main() {
   const repoPath = resolve(getArg('--repo', process.cwd()));
   const base     = getArg('--base', 'origin/main');
   const head     = getArg('--head', 'HEAD');
-  const outPath  = resolve(getArg('--out', './recap-output/recap.html'));
+  const format   = getArg('--format', 'both').toLowerCase();
+  
+  let outPathRaw = getArg('--out', './recap-output/recap');
   const title    = getArg('--title', null);
   const shouldOpen = args.includes('--open');
   const selfTest   = args.includes('--self-test');
@@ -95,30 +98,46 @@ async function main() {
   console.log(`✅  Found ${diff.files.length} changed files across ${diff.commits.length} commit(s)\n`);
   console.log('🎨  Generating visual recap...');
 
-  const html = generateRecap(diff, {
+  // Standardize output folder
+  const baseOutPath = outPathRaw.replace(/\.(html|mdx)$/i, '');
+  const outDir = baseOutPath.substring(0, Math.max(baseOutPath.lastIndexOf('/'), baseOutPath.lastIndexOf('\\')));
+  if (outDir) {
+    mkdirSync(outDir, { recursive: true });
+  }
+
+  const recapOptions = {
     title: title || `Code Recap: ${effectiveBase}..${effectiveHead}`,
     repoPath,
     base: effectiveBase,
     head: effectiveHead,
-  });
+  };
 
-  // Write output
-  const outDir = outPath.replace(/[^/\\]+$/, '');
-  mkdirSync(outDir, { recursive: true });
-  writeFileSync(outPath, html, 'utf8');
+  const generatedHtmlPath = `${baseOutPath}.html`;
+  const generatedMdxPath = `${baseOutPath}.mdx`;
 
-  console.log(`\n✨  Recap generated!\n`);
-  console.log(`    📄  ${outPath}\n`);
+  if (format === 'html' || format === 'both') {
+    const html = generateRecap(diff, recapOptions);
+    writeFileSync(generatedHtmlPath, html, 'utf8');
+    console.log(`    📄  HTML: ${generatedHtmlPath}`);
+  }
 
-  if (shouldOpen) {
+  if (format === 'mdx' || format === 'both') {
+    const mdx = generateMdx(diff, recapOptions);
+    writeFileSync(generatedMdxPath, mdx, 'utf8');
+    console.log(`    📄  MDX:  ${generatedMdxPath}`);
+  }
+
+  console.log(`\n✨  Recap generated successfully!\n`);
+
+  if (shouldOpen && (format === 'html' || format === 'both')) {
     const { exec } = await import('child_process');
     const openCmd = process.platform === 'win32'
-      ? `start "" "${outPath}"`
+      ? `start "" "${generatedHtmlPath}"`
       : process.platform === 'darwin'
-        ? `open "${outPath}"`
-        : `xdg-open "${outPath}"`;
+        ? `open "${generatedHtmlPath}"`
+        : `xdg-open "${generatedHtmlPath}"`;
     exec(openCmd);
-    console.log('    🌐  Opening in browser...\n');
+    console.log('    🌐  Opening HTML report in browser...\n');
   }
 }
 
