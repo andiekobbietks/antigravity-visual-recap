@@ -9,6 +9,7 @@
 
 import { generateRecap } from './index.js';
 import { generateMdx } from './mdx.js';
+import { generateScrolly } from './scrolly.js';
 import { collectDiff } from './collect.js';
 import { resolve } from 'path';
 import { writeFileSync, mkdirSync } from 'fs';
@@ -30,9 +31,9 @@ Options:
   --base <ref>       Base git ref (default: origin/main)
   --head <ref>       Head git ref (default: HEAD)
   --out <path>       Output base file path (default: ./recap-output/recap)
-                     Note: file extensions (.html/.mdx) will be appended automatically
-                     if not specified.
-  --format <type>    Output format: html, mdx, or both (default: both)
+                     Note: file extensions (.html/.mdx/.scrolly.html) will be
+                     appended automatically if not specified.
+  --format <type>    Output format: html, mdx, scrolly, or all (default: all)
   --open             Open the HTML report in the default browser after generating
   --title <text>     Custom title for the recap
   --help             Show this help message
@@ -115,29 +116,48 @@ async function main() {
   const generatedHtmlPath = `${baseOutPath}.html`;
   const generatedMdxPath = `${baseOutPath}.mdx`;
 
-  if (format === 'html' || format === 'both') {
+  const generatedScrollyPath = `${baseOutPath}.scrolly.html`;
+
+  if (format === 'html' || format === 'all') {
     const html = generateRecap(diff, recapOptions);
     writeFileSync(generatedHtmlPath, html, 'utf8');
-    console.log(`    📄  HTML: ${generatedHtmlPath}`);
+    console.log(`    📄  HTML:    ${generatedHtmlPath}`);
   }
 
-  if (format === 'mdx' || format === 'both') {
+  if (format === 'mdx' || format === 'all') {
     const mdx = generateMdx(diff, recapOptions);
     writeFileSync(generatedMdxPath, mdx, 'utf8');
-    console.log(`    📄  MDX:  ${generatedMdxPath}`);
+    console.log(`    📄  MDX:     ${generatedMdxPath}`);
+  }
+
+  if (format === 'scrolly' || format === 'all') {
+    const scrolly = generateScrolly(diff, recapOptions);
+    writeFileSync(generatedScrollyPath, scrolly, 'utf8');
+    console.log(`    🎬  Scrolly: ${generatedScrollyPath}`);
   }
 
   console.log(`\n✨  Recap generated successfully!\n`);
 
-  if (shouldOpen && (format === 'html' || format === 'both')) {
+  if (shouldOpen) {
     const { exec } = await import('child_process');
-    const openCmd = process.platform === 'win32'
-      ? `start "" "${generatedHtmlPath}"`
-      : process.platform === 'darwin'
-        ? `open "${generatedHtmlPath}"`
-        : `xdg-open "${generatedHtmlPath}"`;
-    exec(openCmd);
-    console.log('    🌐  Opening HTML report in browser...\n');
+    // Open HTML dashboard
+    if (format === 'html' || format === 'all') {
+      const cmd = process.platform === 'win32'
+        ? `start "" "${generatedHtmlPath}"`
+        : process.platform === 'darwin' ? `open "${generatedHtmlPath}"` : `xdg-open "${generatedHtmlPath}"`;
+      exec(cmd);
+      console.log('    🌐  Opening HTML in browser...');
+    }
+    // Open Scrolly dashboard in a second tab
+    if (format === 'scrolly' || format === 'all') {
+      await new Promise(r => setTimeout(r, 600)); // slight delay so tabs open separately
+      const cmd2 = process.platform === 'win32'
+        ? `start "" "${generatedScrollyPath}"`
+        : process.platform === 'darwin' ? `open "${generatedScrollyPath}"` : `xdg-open "${generatedScrollyPath}"`;
+      exec(cmd2);
+      console.log('    🎬  Opening Scrolly in browser...');
+    }
+    console.log('');
   }
 }
 
