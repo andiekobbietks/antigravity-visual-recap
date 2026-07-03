@@ -1,0 +1,84 @@
+# React to Vue Migration Walkthrough (Code Hike Edition)
+
+This is an automated scrollycoding breakdown of the React-to-Vue migration for `community-launchpad-proto`, rendered using **Code Hike**. Scroll down to see the code pane highlight and focus on the corresponding files and lines dynamically.
+
+<CH.Scrollycoding>
+
+## Step 1: Package Manifest Migration
+We start by swapping out the core React dependencies (`react`, `react-dom`, `@tanstack/react-router`) with the modern Vue 3 ecosystem (`vue`, `vue-router`, `pinia`).
+
+```json package.json
+{
+  "name": "community-launchpad-proto",
+  "version": "1.0.0",
+  "dependencies": {
+    "vue": "^3.3.4",
+    "vue-router": "^4.2.2",
+    "pinia": "^2.1.3"
+  }
+}
+```
+
+---
+
+## Step 2: Main Entry Point (`main.ts`)
+Instead of `ReactDOM.createRoot()`, we initialize the app using Vue's `createApp`. We then install the router and mount the root component to the `#app` DOM node.
+
+```typescript src/main.ts
+import { createApp } from 'vue'
+import App from './App.vue'
+import router from './router'
+
+const app = createApp(App)
+app.use(router)
+app.mount('#app')
+```
+
+---
+
+## Step 3: Root App Layout (`App.vue`)
+The React TSX layout file is replaced with a single-file component (SFC). We define the `RouterView` inside the template block to render matching route components.
+
+```html src/App.vue
+<script setup lang="ts">
+import { RouterView } from 'vue-router'
+</script>
+
+<template>
+  <main class="app-layout">
+    <RouterView />
+  </main>
+</template>
+
+<style scoped>
+.app-layout {
+  min-height: 100vh;
+  background-color: #0b0f19;
+}
+</style>
+```
+
+---
+
+## Step 4: Router Configuration (`router/index.ts`)
+We migrate from TanStack Router to Vue Router, setting up path mappings and lazy-loading route views (like `HomeView` and `MentorMatch`).
+
+```typescript src/router/index.ts focus=1:12
+import { createRouter, createWebHistory } from 'vue-router'
+import HomeView from '../views/HomeView.vue'
+
+const router = createRouter({
+  history: createWebHistory(),
+  routes: [
+    {
+      path: '/',
+      name: 'home',
+      component: HomeView
+    }
+  ]
+})
+
+export default router
+```
+
+</CH.Scrollycoding>
