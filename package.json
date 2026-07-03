@@ -1,6 +1,7 @@
 {
   "name": "antigravity-visual-recap",
   "version": "1.0.0",
+  "type": "module",
   "description": "Local visual code recap tool — generates rich HTML change reports from git diffs. Works entirely offline, no accounts or subscriptions required.",
   "main": "src/index.js",
   "bin": {
