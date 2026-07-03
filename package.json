@@ -1,0 +1,30 @@
+{
+  "name": "antigravity-visual-recap",
+  "version": "1.0.0",
+  "description": "Local visual code recap tool — generates rich HTML change reports from git diffs. Works entirely offline, no accounts or subscriptions required.",
+  "main": "src/index.js",
+  "bin": {
+    "recap": "./src/cli.js"
+  },
+  "scripts": {
+    "recap": "node src/cli.js",
+    "dev": "node src/cli.js --help",
+    "test": "node src/cli.js --self-test"
+  },
+  "keywords": [
+    "git",
+    "diff",
+    "code-review",
+    "visual",
+    "recap",
+    "antigravity",
+    "local",
+    "offline"
+  ],
+  "author": "andiekobbietks",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {}
+}
